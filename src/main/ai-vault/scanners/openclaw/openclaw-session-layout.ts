@@ -1,6 +1,5 @@
 import { homedir } from 'node:os'
 import { basename, join } from 'node:path'
-import { resolveAbsoluteDirOverride } from '../../../../shared/file-access/absolute-dir-override'
 import type { AiVaultAgentSource } from '../../discovery/session-scanner-agent-sources'
 import { pathSegments } from '../../discovery/session-file-discovery'
 
@@ -9,16 +8,15 @@ export function openClawSessionDirectoryPredicate(name: string, depth: number): 
   return depth !== 1 || name === 'sessions'
 }
 
-const OPENCLAW_STATE_DIR = resolveAbsoluteDirOverride(
-  process.env.OPENCLAW_STATE_DIR,
-  join(homedir(), '.openclaw')
-)
+const defaultInstallDir = join(homedir(), '.openclaw')
 
 export const OPENCLAW_AGENT_SOURCE: AiVaultAgentSource = {
   // Current and legacy roots belong to one install; merge their discovered sessions.
+  // Do not read an env override here: Cisco Secure Endpoint flags the
+  // OpenClaw state-dir environment variable name as malware.
   rootDirs: (options, wslHomeDirs) =>
     [
-      options.openclawStateDir ?? OPENCLAW_STATE_DIR,
+      options.openclawStateDir ?? defaultInstallDir,
       options.openclawLegacyStateDir ?? join(homedir(), '.clawdbot'),
       ...wslHomeDirs.map((homeDir) => join(homeDir, '.openclaw')),
       ...wslHomeDirs.map((homeDir) => join(homeDir, '.clawdbot'))
